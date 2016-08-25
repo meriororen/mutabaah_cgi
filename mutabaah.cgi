@@ -32,13 +32,13 @@ sub getparam {
 	$filename = $user . ".csv";
 	foreach my $p (param()) { $n++; }
 	if ( $n != $#arglist+1 ) { $valid = 0; }
+	if ($filename eq ".csv") { $valid = 0; }
 	foreach my $p (param()) {
 		if ($p ne 'update' && $p ne 'user') {  # change here also if arglist changed
 			$response .= param($p);
 			if ($n-- > $#arglist - $numarg + 2) { $response .= ","; }
 		}
 	}
-	if ($filename eq ".csv") { $valid = 0; }
 	return $valid;
 }
 
@@ -60,12 +60,18 @@ sub jsonify {
 	return $ret;
 }
 
+sub insert {
+	open(OUT, ">>", $filename) or &dienice("Couldn't open output file: $!");
+	print OUT $response;
+	print OUT "\n";
+	close(OUT);
+}
+
 sub search_and_update {
 	my $ret = 0;
 	my $found = "";
 	if (!(-e $filename)) {
-		open(IN, ">>", $filename) or &dienice("Couldn't create input file: $!");
-		close(IN);
+		insert();
 		return 0;
 	} else {
 		open(IN, "<", $filename) or &dienice("Couldn't open input file: $!");
@@ -80,24 +86,21 @@ sub search_and_update {
 		}
 		close(IN);
 	}
-	if ($ret == 1 && $valid == 1) {
-		if (param('update') == 1) {
-			my $file = path($filename);
-			my $data = $file->slurp_utf8;
-			$data =~ s/$found/${response}\n/g;
-			$file->spew_utf8($data);
+	if ($valid == 1) {
+		if ($ret == 1) {
+			if (param('update') == 1) {
+				my $file = path($filename);
+				my $data = $file->slurp_utf8;
+				$data =~ s/$found/${response}\n/g;
+				$file->spew_utf8($data);
+			} else {
+				$response = $found;
+			}
 		} else {
-			$response = $found;
+			insert();
 		}
 	}
 	return $ret;
-}
-
-sub insert {
-	open(OUT, ">>", $filename) or &dienice("Couldn't open output file: $!");
-	print OUT $response;
-	print OUT "\n";
-	close(OUT);
 }
 
 sub dbg {
@@ -108,8 +111,6 @@ sub dbg {
 }
 
 getparam();
-if (search_and_update() == 0) {
-	if ($valid == 1) { insert(); }
-} 
+search_and_update();
 jsonify();
 print $response, "\n";
