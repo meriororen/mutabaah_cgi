@@ -100,7 +100,6 @@ sub search_and_update {
 				$response = $found;
 				$response =~ s/\s+$//g;
 			}
-				print $response;
 			
 		} else {
 			if ($update == 1) { insert(); }
