@@ -6,14 +6,16 @@ use warnings;
 
 use Path::Tiny qw(path);
 
-#print header('application/json');
-print header('text/html');
+print header('application/json');
+#print header('text/html');
 my $response = "";
 my $valid = 1;
 my $user = "";
 my $filename = "";
 my $numarg = 9; # actual number of arguments (date + data)
 my @arglist = ("user", "update","date","SJ","SR", "WQ", "SD", "ZS", "ZP", "SM", "PS");
+my $update = param('update');
+my $status = "OK";
 
 sub dienice {
 	print "ERROR! ";
@@ -44,9 +46,10 @@ sub getparam {
 
 sub jsonify {
 	my $ret = 0;
+	#$response =~ s/[ ]+//g;
 	my @token = split(/,/, $response);
 	if ( $valid == 1 ) {
-		$response = '{ "status" : "OK",';
+		$response = '{ "status" : "'. $status . '",';
 		for (my $i = 0; $i < $numarg ; $i++) {
 			$response .= '"' . $arglist[$i + $#arglist - $numarg + 1] . '" : "' . $token[$i] . '"';
 			if ( $i < $#token  )  { $response .= ','; }
@@ -68,10 +71,10 @@ sub insert {
 }
 
 sub search_and_update {
-	my $ret = 0;
+	my $isfound = 0;
 	my $found = "";
 	if (!(-e $filename)) {
-		insert();
+		if ($valid == 1 && $update == 1) { insert(); }
 		return 0;
 	} else {
 		open(IN, "<", $filename) or &dienice("Couldn't open input file: $!");
@@ -80,37 +83,34 @@ sub search_and_update {
 		while(<IN>) {
 			if ($_ =~ /${pat}/) {
 				$found = $_;					
-				$ret = 1;
+				$isfound = 1;
 				last;
 			}
 		}
 		close(IN);
 	}
 	if ($valid == 1) {
-		if ($ret == 1) {
-			if (param('update') == 1) {
+		if ($isfound == 1) {
+			if ($update == 1) {
 				my $file = path($filename);
 				my $data = $file->slurp_utf8;
 				$data =~ s/$found/${response}\n/g;
 				$file->spew_utf8($data);
 			} else {
 				$response = $found;
+				$response =~ s/\s+$//g;
 			}
+				print $response;
+			
 		} else {
-			insert();
+			if ($update == 1) { insert(); }
+			else { $status = "NA"; }
 		}
 	}
-	return $ret;
-}
-
-sub dbg {
-	open(OUT, ">>dbg.csv") or &dienice("Couldn't open output file: $!");
-	print OUT $response;
-	print OUT "\n";
-	close(OUT);
+	return $isfound;
 }
 
 getparam();
 search_and_update();
 jsonify();
-print $response, "\n";
+print $response;
