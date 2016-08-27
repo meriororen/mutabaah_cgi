@@ -14,6 +14,7 @@ my $data = param('data');
 my $filename = $user . ".csv";
 my @arresp = ();
 my $response = "";
+my $status = "OK";
 
 my %start;
 @start{qw[day month year]} = split /_/, $startd;
@@ -47,12 +48,16 @@ sub getdata {
 }
 
 sub jsonifygraph {
-	$response = "{ ";
-	for(my $i = 0; $i <= $#arresp; $i += 2) {
-		$response .= '"' . $arresp[$i] . '" : "' . $arresp[$i+1];
-		if ($#arresp - 1 > $i) { $response .= '",'; }
+	$response = '{"status":"' . $status . '"' ;
+	if ($status eq "OK") {
+		$response .= ',"data":[';
+		for(my $i = 0; $i <= $#arresp; $i += 2) {
+			$response .= '{"date":"' . $arresp[$i] . '","value":"' . $arresp[$i+1] . '"}';
+			if ($#arresp - 1 > $i) { $response .= ','; }
+		}
+		$response .= ']';
 	}
-	$response .= '" }';
+	$response .= '}';
 }
 
 getdata();
