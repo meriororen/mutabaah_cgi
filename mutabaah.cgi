@@ -33,7 +33,7 @@ sub getparam {
 	$user = param('user') ;
 	$filename = $user . ".csv";
 	foreach my $p (param()) { $n++; }
-	if ( $n != $#arglist+1 ) { $valid = 0; }
+	if ( $n != $#arglist+1 && $update == 1) { $valid = 0; }
 	if ($filename eq ".csv") { $valid = 0; }
 	foreach my $p (param()) {
 		if ($p ne 'update' && $p ne 'user') {  # change here also if arglist changed
@@ -48,7 +48,7 @@ sub jsonify {
 	my $ret = 0;
 	#$response =~ s/[ ]+//g;
 	my @token = split(/,/, $response);
-	if ( $valid == 1 ) {
+	if ( $valid == 1 && $status ne "NA") {
 		$response = '{ "status" : "'. $status . '",';
 		for (my $i = 0; $i < $numarg ; $i++) {
 			$response .= '"' . $arglist[$i + $#arglist - $numarg + 1] . '" : "' . $token[$i] . '"';
@@ -56,7 +56,7 @@ sub jsonify {
 		}
 		$response .= ' }';
 	} else {
-		$response = '{ "status" : "NO" }';
+		$response = '{ "status" : "'. $status .'" }';
 		$ret = 1;
 	}
 
